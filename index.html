@@ -388,6 +388,43 @@
     .nav-btn.active { color: var(--accent); }
     .nav-icon { font-size: 18px; }
 
+    /* 자동수집 버튼 */
+    .section-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .section-label-row .section-label { margin-bottom: 0; }
+    .btn-auto-fetch {
+      background: linear-gradient(135deg, rgba(99,179,237,0.15), rgba(99,179,237,0.05));
+      border: 1px solid rgba(99,179,237,0.3);
+      border-radius: 8px;
+      padding: 6px 12px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--sans);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-auto-fetch:active { transform: scale(0.95); background: rgba(99,179,237,0.2); }
+    .btn-auto-fetch.loading { opacity: 0.6; pointer-events: none; }
+    .fetch-status {
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--text3);
+      margin-bottom: 8px;
+      min-height: 16px;
+      transition: color 0.3s;
+    }
+    .fetch-status.success { color: var(--accent3); }
+    .fetch-status.error { color: var(--red); }
+    .fetch-status.loading { color: var(--accent2); }
+
     /* 유틸 */
     .divider { height: 1px; background: var(--border); margin: 4px 20px; }
     .gap { height: 16px; }
@@ -412,7 +449,13 @@
 
   <!-- 종가 입력 -->
   <div class="section">
-    <div class="section-label">📊 ETF 현재가 입력</div>
+    <div class="section-label-row">
+      <div class="section-label">📊 ETF 현재가</div>
+      <button class="btn-auto-fetch" id="fetchBtn" onclick="fetchAllPrices()">
+        <span id="fetchBtnIcon">⚡</span> 자동수집
+      </button>
+    </div>
+    <div class="fetch-status" id="fetchStatus"></div>
     <div class="price-grid" id="priceGrid">
       <!-- JS로 렌더링 -->
     </div>
@@ -804,8 +847,99 @@ function hideError() {
 }
 
 // ============================================================
-// 복사 & 이메일
+// Yahoo Finance 종가 자동수집
 // ============================================================
+const YAHOO_CODES = {
+  sp500:   '379800.KS',
+  nasdaq:  '379810.KS',
+  semi:    '396500.KS',
+  defense: '455890.KS',
+  value:   '465580.KS',
+};
+
+// CORS 프록시 목록 (하나 실패 시 다음으로)
+const CORS_PROXIES = [
+  'https://corsproxy.io/?',
+  'https://api.allorigins.win/raw?url=',
+];
+
+async function fetchAllPrices() {
+  const btn = document.getElementById('fetchBtn');
+  const icon = document.getElementById('fetchBtnIcon');
+  const status = document.getElementById('fetchStatus');
+
+  btn.classList.add('loading');
+  icon.textContent = '⏳';
+  setFetchStatus('loading', '종가 수집 중...');
+
+  let successCount = 0;
+  const errors = [];
+
+  for (const etf of ETF_LIST) {
+    const yahooCode = YAHOO_CODES[etf.id];
+    try {
+      const price = await fetchYahooPrice(yahooCode);
+      if (price) {
+        const input = document.getElementById('price_' + etf.id);
+        input.value = price;
+        updatePnl(etf.id, etf.avg, etf.qty);
+        successCount++;
+        setFetchStatus('loading', `${successCount}/${ETF_LIST.length} 수집 완료...`);
+      }
+    } catch (e) {
+      errors.push(etf.name);
+    }
+    // 요청 간격 (API 과부하 방지)
+    await sleep(300);
+  }
+
+  btn.classList.remove('loading');
+  icon.textContent = '⚡';
+
+  if (successCount === ETF_LIST.length) {
+    setFetchStatus('success', `✅ 전체 ${successCount}개 종가 수집 완료 (15분 지연)`);
+  } else if (successCount > 0) {
+    setFetchStatus('success', `✅ ${successCount}개 수집 완료 / ❌ 실패: ${errors.join(', ')}`);
+  } else {
+    setFetchStatus('error', '❌ 수집 실패 — 수동 입력해주세요');
+  }
+}
+
+async function fetchYahooPrice(code) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${code}?interval=1d&range=1d`;
+
+  for (const proxy of CORS_PROXIES) {
+    try {
+      const res = await fetch(proxy + encodeURIComponent(url), {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const result = data?.chart?.result?.[0];
+      if (!result) continue;
+
+      // 장중이면 현재가, 마감이면 종가
+      const meta = result.meta;
+      const price = meta.regularMarketPrice || meta.previousClose;
+      if (price && price > 0) return Math.round(price);
+    } catch (e) {
+      continue;
+    }
+  }
+  throw new Error('fetch failed: ' + code);
+}
+
+function setFetchStatus(type, msg) {
+  const el = document.getElementById('fetchStatus');
+  el.textContent = msg;
+  el.className = 'fetch-status ' + type;
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+
 function copyReport() {
   navigator.clipboard.writeText(currentReport).then(() => {
     alert('클립보드에 복사됐습니다.');
