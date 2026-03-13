@@ -656,16 +656,34 @@ function handleExcelUpload(event) {
       const ws = wb.Sheets[wb.SheetNames[0]];
       const data = XLSX.utils.sheet_to_json(ws);
 
-      // 거래내역으로 변환
-      const imported = data.map(row => ({
-        id: Date.now() + Math.random(),
-        etf: row['종목'] || row['ETF'] || row['종목명'] || '',
-        type: row['구분'] || row['매매구분'] || row['type'] || 'buy',
-        qty: parseInt(row['수량'] || row['qty'] || 0),
-        price: parseInt(row['단가'] || row['price'] || 0),
-        date: row['날짜'] || row['date'] || new Date().toISOString().slice(0,10),
-        memo: row['메모'] || row['memo'] || '',
-      })).filter(r => r.etf && r.qty > 0);
+      // 거래내역으로 변환 (삼성증권 엑셀 컬럼 포함)
+      const typeMap = {'매수':'buy','매도':'sell','관망':'hold','buy':'buy','sell':'sell','hold':'hold'};
+      const imported = data.map(row => {
+        // 매매구분 → buy/sell/hold 변환
+        const rawType = row['매매구분'] || row['구분'] || row['type'] || '매수';
+        const type = typeMap[String(rawType).trim()] || 'buy';
+
+        // 날짜: Date 객체, 엑셀 시리얼 숫자, 문자열 모두 처리
+        let rawDate = row['구매일'] || row['날짜'] || row['date'] || '';
+        let date;
+        if (rawDate instanceof Date) {
+          date = rawDate.toISOString().slice(0,10);
+        } else if (typeof rawDate === 'number' && rawDate > 40000) {
+          date = new Date((rawDate - 25569) * 86400 * 1000).toISOString().slice(0,10);
+        } else {
+          date = String(rawDate).slice(0,10) || new Date().toISOString().slice(0,10);
+        }
+
+        return {
+          id:    Date.now() + Math.random(),
+          etf:   String(row['종목명'] || row['종목'] || row['ETF'] || '').trim(),
+          type,
+          qty:   Math.abs(parseInt(row['매매수량'] || row['수량'] || row['qty'] || 0)),
+          price: parseInt(row['매매단가'] || row['단가'] || row['price'] || 0),
+          date,
+          memo:  row['메모'] || row['memo'] || '',
+        };
+      }).filter(r => r.etf !== '');
 
       trades = [...imported, ...trades];
       localStorage.setItem('trades', JSON.stringify(trades));
