@@ -175,6 +175,8 @@
     .setting-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none}
     .setting-input:focus{border-color:var(--accent)}
     .btn-save{width:100%;background:var(--accent);color:var(--bg);border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;font-family:var(--sans)}
+    .ctx-btn{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text3);font-size:11px;font-family:var(--sans);cursor:pointer;transition:all .2s;flex:1;text-align:center}
+    .ctx-btn.active{background:rgba(99,179,237,.2);border-color:var(--accent);color:var(--accent);font-weight:600}
 
     /* 하단 네비 */
     .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:rgba(10,15,30,.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding:10px 0 20px;z-index:100}
@@ -427,6 +429,16 @@
     <div class="setting-row">
       <div class="setting-label">Gmail 주소</div>
       <input class="setting-input" type="email" id="gmailInput" placeholder="your@gmail.com">
+    </div>
+    <div class="setting-row">
+      <div class="setting-label">이전 보고서 참조 개수</div>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <button class="ctx-btn" id="ctx0" onclick="setCtx(0)">참조안함</button>
+        <button class="ctx-btn" id="ctx1" onclick="setCtx(1)">1개</button>
+        <button class="ctx-btn" id="ctx2" onclick="setCtx(2)">2개 ⭐</button>
+        <button class="ctx-btn" id="ctx3" onclick="setCtx(3)">3개</button>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:6px">많을수록 연속성 ↑ / API 토큰 소비 ↑ (권장: 2개)</div>
     </div>
     <button class="btn-save" onclick="saveSettings()">저장</button>
   </div>
@@ -848,11 +860,36 @@ async function generateReport(type) {
   hideReport(); hideError();
 
   try {
+    setLoadingStep('이전 보고서 컨텍스트 구성 중...');
+
+    // 이전 보고서를 multi-turn 대화로 구성 (설정값 기준, 기본 2개)
+    const contextCount = parseInt(localStorage.getItem('contextCount') || '2');
+    const prevReports = reportHistory.slice(0, contextCount).reverse(); // 오래된순 정렬
+    const messages = [];
+
+    if (prevReports.length > 0) {
+      const contextText = prevReports.map((r, i) =>
+        `--- 이전 보고서 ${i+1} (${r.time} / ${r.type}) ---\n` +
+        r.content.slice(0, 2000) + (r.content.length > 2000 ? '\n...(생략)' : '')
+      ).join('\n\n');
+
+      messages.push({
+        role: 'user',
+        content: `[이전 보고서 컨텍스트 — 연속성 유지를 위해 참고하세요]\n\n${contextText}`
+      });
+      messages.push({
+        role: 'assistant',
+        content: '이전 보고서를 확인했습니다. 예측 적중 여부, 시나리오 변화, 모의투자 연속성을 유지하며 새 보고서를 작성하겠습니다.'
+      });
+    }
+
+    messages.push({ role: 'user', content: buildPrompt(type, priceText+tradeText, sc, now) });
+
     setLoadingStep('보고서 생성 중...');
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content:buildPrompt(type,priceText+tradeText,sc,now)}]})
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:4000,messages})
     });
     const data=await res.json();
     if(data.error) throw new Error(data.error.message);
@@ -935,7 +972,20 @@ function copyReport(){ navigator.clipboard.writeText(currentReport).then(()=>ale
 function sendEmail(){ const g=localStorage.getItem('gmailAddress'); if(!g){alert('설정에서 Gmail을 입력해주세요');return;} const s=encodeURIComponent(document.getElementById('reportTitle').textContent); const b=encodeURIComponent(currentReport.slice(0,2000)); window.open(`mailto:${g}?subject=${s}&body=${b}`); }
 
 // 설정
-function loadSettings(){ document.getElementById('apiKeyInput').value=localStorage.getItem('claudeApiKey')||''; document.getElementById('gmailInput').value=localStorage.getItem('gmailAddress')||''; }
+function setCtx(n) {
+  [0,1,2,3].forEach(i => {
+    const b = document.getElementById('ctx'+i);
+    if(b) b.className = 'ctx-btn' + (i===n?' active':'');
+  });
+  localStorage.setItem('contextCount', n);
+}
+
+function loadSettings(){
+  document.getElementById('apiKeyInput').value=localStorage.getItem('claudeApiKey')||'';
+  document.getElementById('gmailInput').value=localStorage.getItem('gmailAddress')||'';
+  const cnt=parseInt(localStorage.getItem('contextCount')||'2');
+  setCtx(cnt);
+}
 function saveSettings(){ localStorage.setItem('claudeApiKey',document.getElementById('apiKeyInput').value.trim()); localStorage.setItem('gmailAddress',document.getElementById('gmailInput').value.trim()); closeSettings(); alert('저장됐습니다'); }
 function closeSettings(e){ if(!e||e.target===document.getElementById('settingsModal')){ document.getElementById('settingsModal').className='modal-overlay'; document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active')); document.querySelector('.nav-btn.active')||document.getElementById('nav-report').classList.add('active'); } }
 </script>
