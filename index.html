@@ -581,7 +581,7 @@ const ETF_LIST = [
   { id: 'nasdaq',   name: 'KODEX 미국나스닥100', avg: 24373, qty: 25,   code: '379810' },
   { id: 'semi',     name: 'TIGER 반도체TOP10',   avg: 30175, qty: 5,    code: '396500' },
   { id: 'defense',  name: 'KODEX 방산TOP10',     avg: 13326, qty: null, code: '455890' },
-  { id: 'value',    name: 'ACE 코리아밸류업',    avg: 24938, qty: 25,   code: '465580' },
+  { id: 'value',    name: 'ACE 코리아밸류업',    avg: 24938, qty: 25,   code: '496080' },
 ];
 
 let currentReport = '';
@@ -854,13 +854,15 @@ const YAHOO_CODES = {
   nasdaq:  '379810.KS',
   semi:    '396500.KS',
   defense: '455890.KS',
-  value:   '465580.KS',
+  value:   '496080.KS',  // ACE 코리아밸류업 정정
 };
 
-// CORS 프록시 목록 (하나 실패 시 다음으로)
+// CORS 프록시 목록 (하나 실패 시 다음으로 자동 전환)
 const CORS_PROXIES = [
   'https://corsproxy.io/?',
   'https://api.allorigins.win/raw?url=',
+  'https://cors-anywhere.herokuapp.com/',
+  'https://thingproxy.freeboard.io/fetch/',
 ];
 
 async function fetchAllPrices() {
