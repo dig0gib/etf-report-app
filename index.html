@@ -6,9 +6,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="2026 ETF 보고서">
+  <meta name="apple-mobile-web-app-title" content="ETF 보고서">
   <meta name="theme-color" content="#0a0f1e">
-  <title>백경욱 2026 ETF 투자 보고서</title>
+  <title>ETF 투자 보고서</title>
   <link rel="manifest" href="/manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -155,6 +155,18 @@
     .set-input:focus{border-color:var(--accent)}
     .ctx-btn{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text3);font-size:11px;font-family:var(--sans);cursor:pointer;flex:1;text-align:center}
     .ctx-btn.on{background:rgba(99,179,237,.2);border-color:var(--accent);color:var(--accent);font-weight:600}
+    /* 미니 차트 */
+    .chart-toggle{display:flex;align-items:center;justify-content:space-between;padding:0 12px 8px;cursor:pointer;user-select:none}
+    .chart-toggle-lbl{font-size:10px;color:var(--text3);font-family:var(--mono);letter-spacing:.5px}
+    .chart-toggle-arr{font-size:10px;color:var(--text3);transition:transform .25s}
+    .chart-toggle-arr.open{transform:rotate(180deg)}
+    .chart-wrap{display:none;border-top:1px solid var(--border)}
+    .chart-wrap.open{display:block}
+    .chart-period-row{display:flex;gap:4px;padding:8px 12px 4px;border-bottom:1px solid var(--border)}
+    .chart-period-btn{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:3px 9px;font-size:10px;font-family:var(--mono);color:var(--text3);cursor:pointer;transition:all .15s}
+    .chart-period-btn.on{background:rgba(99,179,237,.15);border-color:var(--accent);color:var(--accent)}
+    .chart-frame-wrap{position:relative;background:var(--bg2)}
+    .chart-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text3);font-family:var(--mono);background:var(--bg2);z-index:2}
     /* 분할매수 추적기 */
     .dca-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden}
     .dca-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px}
@@ -464,11 +476,11 @@
 // 상수
 // ═══════════════════════════════
 const ETF_LIST = [
-  {id:'sp500',  name:'KODEX 미국S&P500',   yCode:'379800.KS', color:'#63b3ed'},
-  {id:'nasdaq', name:'KODEX 미국나스닥100', yCode:'379810.KS', color:'#f6ad55'},
-  {id:'semi',   name:'TIGER 반도체TOP10',   yCode:'396500.KS', color:'#68d391'},
-  {id:'defense',name:'KODEX 방산TOP10',     yCode:'455890.KS', color:'#fc8181'},
-  {id:'value',  name:'ACE 코리아밸류업',    yCode:'496120.KS', color:'#b794f4'},
+  {id:'sp500',  name:'KODEX 미국S&P500',   yCode:'379800.KS', color:'#63b3ed', tvSym:'KRX:379800'},
+  {id:'nasdaq', name:'KODEX 미국나스닥100', yCode:'379810.KS', color:'#f6ad55', tvSym:'KRX:379810'},
+  {id:'semi',   name:'TIGER 반도체TOP10',   yCode:'396500.KS', color:'#68d391', tvSym:'KRX:396500'},
+  {id:'defense',name:'KODEX 방산TOP10',     yCode:'455890.KS', color:'#fc8181', tvSym:'KRX:455890'},
+  {id:'value',  name:'ACE 코리아밸류업',    yCode:'496120.KS', color:'#b794f4', tvSym:'KRX:496120'},
 ];
 const PROXIES = [
   'https://corsproxy.io/?',
@@ -644,6 +656,23 @@ function renderPriceGrid() {
       </table>
       ${t.reason?`<div class="t-reason">💡 ${t.reason}</div>`:''}
       ` : `<div class="t-empty">보고서 생성 후 매매 타이밍 표시</div>`}
+      <div class="chart-toggle" onclick="toggleChart('${e.id}')">
+        <span class="chart-toggle-lbl">📊 차트 보기</span>
+        <span class="chart-toggle-arr" id="carr_${e.id}">▼</span>
+      </div>
+      <div class="chart-wrap" id="cwrap_${e.id}">
+        <div class="chart-period-row">
+          <button class="chart-period-btn on" id="cpb_${e.id}_1W" onclick="loadChart(event,'${e.id}','${e.tvSym}','1W')">1주</button>
+          <button class="chart-period-btn" id="cpb_${e.id}_1M" onclick="loadChart(event,'${e.id}','${e.tvSym}','1M')">1달</button>
+          <button class="chart-period-btn" id="cpb_${e.id}_3M" onclick="loadChart(event,'${e.id}','${e.tvSym}','3M')">3달</button>
+          <button class="chart-period-btn" id="cpb_${e.id}_6M" onclick="loadChart(event,'${e.id}','${e.tvSym}','6M')">6달</button>
+          <button class="chart-period-btn" id="cpb_${e.id}_1Y" onclick="loadChart(event,'${e.id}','${e.tvSym}','1Y')">1년</button>
+        </div>
+        <div class="chart-frame-wrap">
+          <div class="chart-loading" id="cload_${e.id}">차트 로딩 중...</div>
+          <div id="chart_${e.id}" style="height:280px"></div>
+        </div>
+      </div>
     </div>`;
   }).join('');
 
@@ -656,6 +685,105 @@ function onPriceManual(id) {
   if(v>0) prices[id]=v;
   renderPriceGrid();
   renderDashboard();
+}
+
+// ═══════════════════════════════
+// 미니 차트 (TradingView Widget)
+// ═══════════════════════════════
+const _chartState = {}; // {id: {open, period}}
+
+function toggleChart(id) {
+  const wrap = document.getElementById('cwrap_'+id);
+  const arr  = document.getElementById('carr_'+id);
+  if (!wrap) return;
+
+  const isOpen = wrap.classList.contains('open');
+  if (isOpen) {
+    wrap.classList.remove('open');
+    arr.classList.remove('open');
+  } else {
+    wrap.classList.add('open');
+    arr.classList.add('open');
+    // 처음 열 때만 차트 로드
+    if (!_chartState[id]) {
+      const etf = ETF_LIST.find(e=>e.id===id);
+      if (etf) loadChart(null, id, etf.tvSym, '1W');
+    }
+  }
+}
+
+function loadChart(evt, id, sym, period) {
+  if (evt) { evt.stopPropagation(); }
+
+  // 기간 버튼 활성화
+  ['1W','1M','3M','6M','1Y'].forEach(p => {
+    const btn = document.getElementById(`cpb_${id}_${p}`);
+    if (btn) btn.className = 'chart-period-btn' + (p===period?' on':'');
+  });
+
+  _chartState[id] = { period };
+
+  const container = document.getElementById('chart_'+id);
+  const loader    = document.getElementById('cload_'+id);
+  if (!container) return;
+
+  // TradingView 기간 → interval·range 매핑
+  const periodMap = {
+    '1W': {interval:'D',  range:'1W'},
+    '1M': {interval:'D',  range:'1M'},
+    '3M': {interval:'W',  range:'3M'},
+    '6M': {interval:'W',  range:'6M'},
+    '1Y': {interval:'M',  range:'12M'},
+  };
+  const cfg = periodMap[period] || periodMap['1M'];
+
+  // 기존 위젯 제거
+  container.innerHTML = '';
+  if (loader) loader.style.display = 'flex';
+
+  // TradingView Advanced Chart Widget
+  const script = document.createElement('script');
+  script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+  script.async = true;
+  script.type = 'text/javascript';
+  script.innerHTML = JSON.stringify({
+    autosize: true,
+    symbol: sym,
+    interval: cfg.interval,
+    range: cfg.range,
+    timezone: 'Asia/Seoul',
+    theme: 'dark',
+    style: '1',
+    locale: 'kr',
+    backgroundColor: '#111827',
+    gridColor: 'rgba(99,179,237,0.06)',
+    hide_top_toolbar: false,
+    hide_legend: true,
+    save_image: false,
+    hide_volume: false,
+    support_host: 'https://www.tradingview.com',
+    allow_symbol_change: false,
+    details: false,
+    hotlist: false,
+    calendar: false,
+  });
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'tradingview-widget-container';
+  wrapper.style.height = '280px';
+  wrapper.style.width = '100%';
+
+  const inner = document.createElement('div');
+  inner.className = 'tradingview-widget-container__widget';
+  inner.style.height = '280px';
+  inner.style.width = '100%';
+
+  wrapper.appendChild(inner);
+  wrapper.appendChild(script);
+  container.appendChild(wrapper);
+
+  // 로딩 숨기기 (위젯 로드 후)
+  setTimeout(() => { if (loader) loader.style.display = 'none'; }, 2500);
 }
 
 // ═══════════════════════════════
