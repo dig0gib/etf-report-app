@@ -84,6 +84,8 @@
     .rpt-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
     .btn-rpt{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 6px;color:var(--text);font-family:var(--sans);font-size:12px;font-weight:500;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:all .2s}
     .btn-rpt:active{transform:scale(.95);border-color:var(--accent);background:rgba(99,179,237,.08)}
+    .btn-outlook{border-color:rgba(183,148,244,.3);background:rgba(183,148,244,.05)}
+    .btn-outlook:active{border-color:var(--purple);background:rgba(183,148,244,.12);color:var(--purple)}
     .load-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:30px 20px;text-align:center;display:none}
     .load-box.on{display:block}
     .spinner{width:26px;height:26px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 9px}
@@ -212,6 +214,14 @@
       <button class="btn-rpt" onclick="genReport('장전')"><span style="font-size:20px">🌅</span><span>장전</span></button>
       <button class="btn-rpt" onclick="genReport('장중')"><span style="font-size:20px">📈</span><span>장중</span></button>
       <button class="btn-rpt" onclick="genReport('마감')"><span style="font-size:20px">🌙</span><span>마감</span></button>
+    </div>
+    <div style="margin-top:8px">
+      <div class="sec-lbl" style="margin-bottom:8px;margin-top:2px">📅 기간별 시장 전망</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <button class="btn-rpt btn-outlook" onclick="genReport('단기전망')"><span style="font-size:18px">🔭</span><span style="font-size:11px">15일</span></button>
+        <button class="btn-rpt btn-outlook" onclick="genReport('월간전망')"><span style="font-size:18px">📆</span><span style="font-size:11px">다음달</span></button>
+        <button class="btn-rpt btn-outlook" onclick="genReport('분기전망')"><span style="font-size:18px">🗓️</span><span style="font-size:11px">분기</span></button>
+      </div>
     </div>
   </div>
 
@@ -900,6 +910,136 @@ KODEX 미국S&P500|23,000|22,500|5|112,500|24,000|3|72,000|이평선 지지
 [/매매타이밍]
 ⑤모의투자결산 ⑥공시스캔 ⑦예측정확도`,
   };
+  // ─── 기간별 전망 템플릿 ───
+  const now_date = now.slice(0,10);
+
+  tmpl['단기전망'] = base + `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📅 향후 15일 시장 전망 (${now_date} 기준)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+아래 항목을 구체적 수치와 근거를 들어 작성하세요:
+
+① 이란 전황 15일 전망
+   - 현재 교전 강도·호르무즈 봉쇄 지속 가능성
+   - 미국 개입 여부 시나리오 (A/B/C 기준)
+   - 15일 내 주요 분기점 날짜와 트리거 이벤트
+
+② 유가 전망 (WTI 기준)
+   - 현재 ${document.getElementById('mWTI').textContent} 기준 15일 후 예상 범위
+   - 배럴당 100$/110$/120$ 각 시나리오 확률
+   - 유가가 내 ETF에 미치는 경로 (방산↑, 반도체↓, S&P500↓ 등)
+
+③ 글로벌 증시 15일 전망
+   - 미국 S&P500 예상 범위 (낙관/중립/비관)
+   - KOSPI 예상 범위와 주도 섹터
+   - 한국 원/달러 환율 방향 (현재 ${document.getElementById('mExRate').textContent} 기준)
+
+④ 내 포트폴리오 ETF별 15일 전망
+   각 ETF: 예상 가격 범위 | 핵심 리스크 | 기회
+   - KODEX 미국S&P500
+   - KODEX 미국나스닥100
+   - TIGER 반도체TOP10
+   - KODEX 방산TOP10
+   - ACE 코리아밸류업
+
+⑤ 15일 내 반드시 체크할 이벤트 캘린더
+   (FOMC, 경제지표, 이란 관련 외교일정, 기업실적 등)
+
+⑥ 15일 기준 추천 행동 플랜
+   - 지금 당장 해야 할 것
+   - 15일 후 재평가 시 판단 기준`;
+
+  tmpl['월간전망'] = base + `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📆 다음 달 시장 전망 (${now_date} 기준)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+① 이란·중동 정세 월간 전망
+   - 전쟁 지속 vs 휴전 협상 가능성 (%)
+   - 호르무즈 해협 정상화 시점 예측
+   - 국제 외교 변수 (미국/사우디/러시아/중국 역할)
+
+② 매크로 경제 월간 전망
+   - 미국 연준 다음 달 금리 결정 예상 (동결/인하/인상 확률)
+   - 미국 인플레이션 방향성 (유가 반영 시)
+   - 한국 경제 펀더멘털: 수출·환율·내수 전망
+   - 글로벌 경기침체 확률 업데이트
+
+③ 섹터 순환매 월간 전망
+   - 다음 달 수혜 섹터 TOP3 (근거 포함)
+   - 방산 vs 반도체 상대 강도 전망
+   - 코리아밸류업 정책 모멘텀 지속 여부
+
+④ 내 포트폴리오 ETF별 월간 전망
+   각 ETF: 월말 목표가 | 수익률 예상 범위 | 추가매수 기회 여부
+   - KODEX 미국S&P500
+   - KODEX 미국나스닥100
+   - TIGER 반도체TOP10
+   - KODEX 방산TOP10
+   - ACE 코리아밸류업
+
+⑤ 다음 달 주요 이벤트 캘린더
+   (FOMC, 한국은행 금통위, 주요국 경제지표, 기업 실적 시즌)
+
+⑥ 월간 포트폴리오 전략 요약
+   - 비중 조정 필요 여부
+   - 다음 달 최우선 추가매수 대상 ETF
+   - 리스크 헷지 방안`;
+
+  tmpl['분기전망'] = base + `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🗓️ 분기별 시장 전망 (${now_date} 기준, 향후 3개월)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+① 지정학 분기 시나리오 3가지
+   [시나리오 A — 이란 휴전·정상화] 확률: ${sc.a}%
+   - 유가·방산·반도체 각 영향
+   - KOSPI·S&P500 예상 레벨
+   - 내 포트폴리오 예상 수익률
+
+   [시나리오 B — 교착 지속] 확률: ${sc.b}%
+   - 유가·방산·반도체 각 영향
+   - KOSPI·S&P500 예상 레벨
+   - 내 포트폴리오 예상 수익률
+
+   [시나리오 C — 확전·장기전] 확률: ${sc.c}%
+   - 유가·방산·반도체 각 영향
+   - KOSPI·S&P500 예상 레벨
+   - 내 포트폴리오 예상 수익률
+
+② 글로벌 매크로 분기 전망
+   - 미국 경제: 연착륙·경기침체·스태그플레이션 확률
+   - 연준 분기 내 금리 경로 예상
+   - 달러 강세/약세 방향과 환율 범위
+   - 중국 경기 회복 여부 및 반도체 수요 영향
+
+③ 한국 경제 분기 전망
+   - KOSPI 분기 밴드 (낙관/중립/비관)
+   - 수출·반도체 업황 사이클 위치
+   - 코리아밸류업 정책 분기 모멘텀
+
+④ ETF별 분기 투자 전략
+   각 ETF: 분기 목표가 | 분기 추가매수 계획 | 3년 시나리오 업데이트
+   - KODEX 미국S&P500 (우상향 확신 — 저점 적립)
+   - KODEX 미국나스닥100 (AI 추론 사이클 위치)
+   - TIGER 반도체TOP10 (HBM 업황 사이클 단계)
+   - KODEX 방산TOP10 (수주잔고 소화율 및 모멘텀)
+   - ACE 코리아밸류업 (상법 개정·자사주 소각 정책 진행도)
+
+⑤ 분기 리스크 매트릭스
+   발생 가능성 × 충격 크기 기준
+   - 최대 리스크 3가지 및 대응 방안
+   - 블랙스완 시나리오 (극단적 상황 가정)
+
+⑥ 분기 포트폴리오 행동 계획
+   - 이번 분기 반드시 실행할 것
+   - 트리거 조건별 즉시 행동 플랜
+   - 다음 분기 말 재평가 체크리스트`;
+
   return tmpl[type]||tmpl['장중'];
 }
 
@@ -925,7 +1065,7 @@ function parseTimings(text){
 function renderHist(){
   const el=document.getElementById('histList');if(!el)return;
   if(!rptHist.length){el.innerHTML='<div class="empty-msg">저장된 보고서 없음</div>';return;}
-  const ic={'장전':'🌅','장중':'📈','마감':'🌙'};
+  const ic={'장전':'🌅','장중':'📈','마감':'🌙','단기전망':'🔭','월간전망':'📆','분기전망':'🗓️'};
   el.innerHTML=rptHist.map((r,i)=>`<div class="hist-item" onclick="loadHist(${i})"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:13px;font-weight:600">${ic[r.type]||'📋'} ${r.type} 보고서</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono)">${r.time}</div></div><div style="font-size:11px;color:var(--text3);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.content.slice(0,70)}...</div></div>`).join('');
 }
 function loadHist(i){goPage('report');curReport=rptHist[i].content;showRpt(rptHist[i].type,curReport);parseTimings(curReport);}
@@ -936,7 +1076,7 @@ function clearHist(){if(!confirm('전체 삭제?'))return;rptHist=[];localStorag
 // ═══════════════════════════════
 function showLoad(on){document.getElementById('loadBox').className='load-box'+(on?' on':'');}
 function setStep(m){document.getElementById('loadStep').textContent=m;}
-function showRpt(type,txt){const ic={'장전':'🌅','장중':'📈','마감':'🌙'};document.getElementById('rptTitle').textContent=(ic[type]||'📋')+' '+type+' 보고서';document.getElementById('rptBox').textContent=txt;document.getElementById('rptSec').className='rpt-sec on';document.getElementById('rptSec').scrollIntoView({behavior:'smooth'});}
+function showRpt(type,txt){const ic={'장전':'🌅','장중':'📈','마감':'🌙','단기전망':'🔭','월간전망':'📆','분기전망':'🗓️'};document.getElementById('rptTitle').textContent=(ic[type]||'📋')+' '+type+' 보고서';document.getElementById('rptBox').textContent=txt;document.getElementById('rptSec').className='rpt-sec on';document.getElementById('rptSec').scrollIntoView({behavior:'smooth'});}
 function hideRpt(){document.getElementById('rptSec').className='rpt-sec';}
 function showErr(m){const e=document.getElementById('errBox');e.textContent=m;e.className='err-box on';}
 function hideErr(){document.getElementById('errBox').className='err-box';}
