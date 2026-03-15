@@ -155,6 +155,31 @@
     .set-input:focus{border-color:var(--accent)}
     .ctx-btn{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text3);font-size:11px;font-family:var(--sans);cursor:pointer;flex:1;text-align:center}
     .ctx-btn.on{background:rgba(99,179,237,.2);border-color:var(--accent);color:var(--accent);font-weight:600}
+    /* 분할매수 추적기 */
+    .dca-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden}
+    .dca-header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px}
+    .dca-name{font-size:12px;font-weight:600}
+    .dca-progress{font-size:10px;font-family:var(--mono);color:var(--text3)}
+    .dca-progress-bar{height:4px;background:var(--bg3);margin:0 12px 10px;border-radius:2px;overflow:hidden}
+    .dca-progress-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent3),var(--accent));transition:width .5s ease}
+    .dca-steps{padding:0 12px 10px;display:flex;flex-direction:column;gap:6px}
+    .dca-step{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;background:var(--bg3);cursor:pointer;transition:all .2s}
+    .dca-step.done{background:rgba(104,211,145,.1);border:1px solid rgba(104,211,145,.2)}
+    .dca-step.current{background:rgba(99,179,237,.08);border:1px solid rgba(99,179,237,.2)}
+    .dca-step.pending{border:1px solid transparent}
+    .dca-check{width:18px;height:18px;border-radius:50%;border:2px solid var(--text3);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;transition:all .2s}
+    .dca-step.done .dca-check{background:var(--accent3);border-color:var(--accent3);color:var(--bg)}
+    .dca-step.current .dca-check{border-color:var(--accent);animation:pulse 1.5s infinite}
+    .dca-step-info{flex:1}
+    .dca-step-price{font-family:var(--mono);font-size:12px;font-weight:600}
+    .dca-step.done .dca-step-price{color:var(--accent3)}
+    .dca-step.current .dca-step-price{color:var(--accent)}
+    .dca-step-detail{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:1px}
+    .dca-step-badge{font-size:9px;padding:2px 6px;border-radius:4px;font-family:var(--mono)}
+    .dca-step.done .dca-step-badge{background:rgba(104,211,145,.15);color:var(--accent3)}
+    .dca-step.current .dca-step-badge{background:rgba(99,179,237,.15);color:var(--accent)}
+    .dca-step.pending .dca-step-badge{background:var(--bg);color:var(--text3)}
+    .dca-form{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:9px}
     .btn-save{width:100%;background:var(--accent);color:var(--bg);border:none;border-radius:9px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;font-family:var(--sans)}
     .btn-green{background:rgba(104,211,145,.1);border:1px solid rgba(104,211,145,.3);border-radius:7px;padding:5px 10px;color:var(--accent3);font-size:11px;font-weight:600;font-family:var(--sans);cursor:pointer}
     .btn-red{background:rgba(252,129,129,.07);border:1px solid rgba(252,129,129,.2);border-radius:7px;padding:5px 10px;color:var(--red);font-size:11px;font-weight:600;font-family:var(--sans);cursor:pointer}
@@ -276,6 +301,66 @@
   <div class="sec">
     <div class="sec-lbl" style="margin-bottom:10px">⚖️ 포트폴리오 비중</div>
     <div id="wbars"></div>
+  </div>
+  <div class="divider"></div>
+
+  <div class="sec">
+    <div class="sec-row">
+      <div class="sec-lbl">🎯 분할매수 계획</div>
+      <button class="btn-green" onclick="showDcaForm()">+ 새 계획</button>
+    </div>
+    <div id="dcaList"></div>
+  </div>
+  <div class="divider"></div>
+
+  <!-- 분할매수 입력 폼 (숨김) -->
+  <div class="sec" id="dcaFormSec" style="display:none">
+    <div class="sec-lbl" style="margin-bottom:10px">📝 분할매수 계획 등록</div>
+    <div class="dca-form">
+      <div><label class="f-lbl">종목</label>
+        <select class="f-input" id="dcaEtf">
+          <option value="">선택</option>
+          <option>KODEX 미국S&P500</option>
+          <option>KODEX 미국나스닥100</option>
+          <option>TIGER 반도체TOP10</option>
+          <option>KODEX 방산TOP10</option>
+          <option>ACE 코리아밸류업</option>
+        </select>
+      </div>
+      <div><label class="f-lbl">총 목표 수량 (주)</label>
+        <input class="f-input" type="number" id="dcaTotalQty" placeholder="15"></div>
+      <div style="border-top:1px solid var(--border);padding-top:10px">
+        <div class="f-lbl" style="margin-bottom:8px">분할 단계 설정 (최대 5단계)</div>
+        <div id="dcaStepInputs">
+          <div class="form-row" style="margin-bottom:6px">
+            <div><label class="f-lbl">1차 목표가</label><input class="f-input" type="number" id="dca_p1" placeholder="22500"></div>
+            <div><label class="f-lbl">1차 수량</label><input class="f-input" type="number" id="dca_q1" placeholder="5"></div>
+          </div>
+          <div class="form-row" style="margin-bottom:6px">
+            <div><label class="f-lbl">2차 목표가</label><input class="f-input" type="number" id="dca_p2" placeholder="22000"></div>
+            <div><label class="f-lbl">2차 수량</label><input class="f-input" type="number" id="dca_q2" placeholder="5"></div>
+          </div>
+          <div class="form-row" style="margin-bottom:6px">
+            <div><label class="f-lbl">3차 목표가</label><input class="f-input" type="number" id="dca_p3" placeholder="21500"></div>
+            <div><label class="f-lbl">3차 수량</label><input class="f-input" type="number" id="dca_q3" placeholder="5"></div>
+          </div>
+          <div class="form-row" style="margin-bottom:6px">
+            <div><label class="f-lbl">4차 목표가 (선택)</label><input class="f-input" type="number" id="dca_p4" placeholder="21000"></div>
+            <div><label class="f-lbl">4차 수량</label><input class="f-input" type="number" id="dca_q4" placeholder=""></div>
+          </div>
+          <div class="form-row">
+            <div><label class="f-lbl">5차 목표가 (선택)</label><input class="f-input" type="number" id="dca_p5" placeholder="20500"></div>
+            <div><label class="f-lbl">5차 수량</label><input class="f-input" type="number" id="dca_q5" placeholder=""></div>
+          </div>
+        </div>
+      </div>
+      <div><label class="f-lbl">메모 (전략 근거)</label>
+        <input class="f-input" type="text" id="dcaMemo" placeholder="예: 이란 C시나리오 대비 저점 분할"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button class="btn-add" style="background:var(--bg3);color:var(--text2);border:1px solid var(--border)" onclick="hideDcaForm()">취소</button>
+        <button class="btn-add" onclick="saveDcaPlan()">계획 저장</button>
+      </div>
+    </div>
   </div>
   <div class="divider"></div>
 
@@ -466,6 +551,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderDashboard();
   renderTrades();
   renderHist();
+  renderDcaList();
   autoFetch();
   fetchMacro();
   setInterval(() => { if (isMarketOpen()) { autoFetch(); fetchMacro(); } }, 5*60*1000);
@@ -498,7 +584,7 @@ function goPage(name) {
   document.getElementById('page-'+name).classList.add('active');
   document.getElementById('nav-'+name).classList.add('active');
   window.scrollTo(0,0);
-  if(name==='portfolio'){renderDashboard();renderTrades();}
+  if(name==='portfolio'){renderDashboard();renderTrades();renderDcaList();}
   if(name==='history')renderHist();
 }
 function openSett(){document.getElementById('settModal').className='modal-overlay on';}
@@ -629,7 +715,7 @@ async function autoFetch() {
     } catch {fail.push(e.name.split(' ').pop());}
     await new Promise(r=>setTimeout(r,300));
   }
-  renderPriceGrid(); renderDashboard();
+  renderPriceGrid(); renderDashboard(); renderDcaList();
   const tt=new Date().toLocaleTimeString('ko-KR',{hour12:false,hour:'2-digit',minute:'2-digit'});
   if(ok===ETF_LIST.length) setFB('ok',`✅ 전체 수집 완료 ${tt}${isMarketOpen()?' · 장중 15분지연':''}`);
   else if(ok>0) setFB('ok',`✅ ${ok}개 완료 / ❌ 실패: ${fail.join(', ')} — 직접 입력 가능`);
@@ -799,6 +885,151 @@ function renderTrades(){
   const lbl={buy:'매수',sell:'매도',hold:'관망'};
   if(!td.length){el.innerHTML='<div class="empty-msg">오늘 거래내역 없음</div>';return;}
   el.innerHTML=td.map(t=>`<div class="trade-item"><div><div style="font-size:12px;font-weight:500">${t.etf}</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:1px">${t.date}${t.memo?' · '+t.memo:''}</div></div><div style="display:flex;align-items:center;gap:7px"><div><span class="t-badge ${t.type}">${lbl[t.type]||t.type}</span><div style="font-family:var(--mono);font-size:10px;color:var(--text2);text-align:right">${t.qty}주 @${t.price.toLocaleString()}<br>${(t.qty*t.price).toLocaleString()}원</div></div><button class="btn-del" onclick="delTrade(${t.id})">✕</button></div></div>`).join('');
+}
+
+// ═══════════════════════════════
+// 분할매수 추적기
+// ═══════════════════════════════
+let dcaPlans = JSON.parse(localStorage.getItem('dcaPlans') || '[]');
+
+function showDcaForm() {
+  document.getElementById('dcaFormSec').style.display = 'block';
+  document.getElementById('dcaFormSec').scrollIntoView({behavior:'smooth'});
+}
+function hideDcaForm() {
+  document.getElementById('dcaFormSec').style.display = 'none';
+  // 입력값 초기화
+  ['dcaEtf','dcaTotalQty','dcaMemo'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  for(let i=1;i<=5;i++){
+    const p=document.getElementById('dca_p'+i); if(p) p.value='';
+    const q=document.getElementById('dca_q'+i); if(q) q.value='';
+  }
+}
+
+function saveDcaPlan() {
+  const etf = document.getElementById('dcaEtf').value;
+  if (!etf) { alert('종목을 선택해주세요'); return; }
+
+  const steps = [];
+  for (let i = 1; i <= 5; i++) {
+    const p = parseInt(document.getElementById('dca_p'+i).value);
+    const q = parseInt(document.getElementById('dca_q'+i).value);
+    if (p && q) steps.push({ step:i, price:p, qty:q, done:false, doneDate:null });
+  }
+  if (steps.length < 1) { alert('최소 1단계 이상 입력해주세요'); return; }
+
+  const plan = {
+    id: Date.now(),
+    etf,
+    totalQty: parseInt(document.getElementById('dcaTotalQty').value) || steps.reduce((s,x)=>s+x.qty,0),
+    memo: document.getElementById('dcaMemo').value,
+    steps,
+    createdAt: new Date().toISOString().slice(0,10),
+    done: false,
+  };
+
+  dcaPlans.unshift(plan);
+  localStorage.setItem('dcaPlans', JSON.stringify(dcaPlans));
+  hideDcaForm();
+  renderDcaList();
+  showToast(`🎯 ${etf} 분할매수 계획 저장됨 (${steps.length}단계)`);
+}
+
+function toggleDcaStep(planId, stepIdx) {
+  const plan = dcaPlans.find(p => p.id === planId);
+  if (!plan) return;
+  const step = plan.steps[stepIdx];
+  step.done = !step.done;
+  step.doneDate = step.done ? new Date().toISOString().slice(0,10) : null;
+  // 모든 단계 완료 시 계획 완료 처리
+  plan.done = plan.steps.every(s => s.done);
+  localStorage.setItem('dcaPlans', JSON.stringify(dcaPlans));
+  renderDcaList();
+  if (step.done) showToast(`✅ ${plan.etf} ${stepIdx+1}차 매수 완료 체크!`);
+}
+
+function deleteDcaPlan(planId) {
+  if (!confirm('이 계획을 삭제하시겠습니까?')) return;
+  dcaPlans = dcaPlans.filter(p => p.id !== planId);
+  localStorage.setItem('dcaPlans', JSON.stringify(dcaPlans));
+  renderDcaList();
+}
+
+function renderDcaList() {
+  const el = document.getElementById('dcaList'); if (!el) return;
+  // 활성 계획 먼저, 완료 계획 뒤로
+  const active = dcaPlans.filter(p => !p.done);
+  const done   = dcaPlans.filter(p => p.done);
+  const all    = [...active, ...done];
+
+  if (!all.length) {
+    el.innerHTML = '<div class="empty-msg">분할매수 계획 없음<br><span style="font-size:10px;color:var(--text3)">+ 새 계획으로 등록하세요</span></div>';
+    return;
+  }
+
+  el.innerHTML = all.map(plan => {
+    const doneCount = plan.steps.filter(s=>s.done).length;
+    const total = plan.steps.length;
+    const pct = Math.round(doneCount/total*100);
+    const etfObj = ETF_LIST.find(e => e.name === plan.etf);
+    const curPrice = etfObj ? prices[etfObj.id] : null;
+
+    // 현재 진행 단계 (첫 번째 미완료)
+    const curStepIdx = plan.steps.findIndex(s => !s.done);
+
+    const stepsHtml = plan.steps.map((s, i) => {
+      let cls = 'pending';
+      let badge = '대기';
+      if (s.done) { cls='done'; badge='완료'; }
+      else if (i === curStepIdx) {
+        cls = 'current';
+        // 현재가와 비교
+        if (curPrice && curPrice <= s.price) badge = '🔔 도달!';
+        else if (curPrice) badge = `현재 ${curPrice.toLocaleString()}`;
+        else badge = '대기중';
+      }
+
+      const priceDiff = (curPrice && !s.done) ? ((curPrice - s.price) / s.price * 100).toFixed(1) : null;
+      const diffTxt = priceDiff !== null
+        ? (priceDiff <= 0
+            ? `<span style="color:var(--accent3)">목표가 대비 ${Math.abs(priceDiff)}% 위</span>`
+            : `<span style="color:var(--text3)">목표가까지 -${priceDiff}%</span>`)
+        : (s.done && s.doneDate ? `완료일 ${s.doneDate}` : '');
+
+      return `
+      <div class="dca-step ${cls}" onclick="toggleDcaStep(${plan.id},${i})">
+        <div class="dca-check">${s.done?'✓':i===curStepIdx?'▶':''}</div>
+        <div class="dca-step-info">
+          <div class="dca-step-price">${s.step}차 · ${s.price.toLocaleString()}원 · ${s.qty}주
+            <span style="font-size:10px;color:var(--text3)"> (${(s.price*s.qty).toLocaleString()}원)</span>
+          </div>
+          <div class="dca-step-detail">${diffTxt}</div>
+        </div>
+        <div class="dca-step-badge">${badge}</div>
+      </div>`;
+    }).join('');
+
+    const alertBorder = curStepIdx>=0 && curPrice && curPrice<=plan.steps[curStepIdx].price
+      ? 'border-color:rgba(104,211,145,.5);box-shadow:0 0 10px rgba(104,211,145,.1)' : '';
+
+    return `
+    <div class="dca-card" style="${alertBorder}${plan.done?'opacity:.6':''}">
+      <div class="dca-header">
+        <div>
+          <div class="dca-name">${plan.etf} ${plan.done?'<span style="color:var(--accent3);font-size:10px">완료</span>':''}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">${plan.memo||''} · ${plan.createdAt}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="dca-progress">${doneCount}/${total} 단계 · ${pct}%</div>
+          <button class="btn-del" onclick="deleteDcaPlan(${plan.id})">✕</button>
+        </div>
+      </div>
+      <div class="dca-progress-bar">
+        <div class="dca-progress-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="dca-steps">${stepsHtml}</div>
+    </div>`;
+  }).join('');
 }
 
 // ═══════════════════════════════
